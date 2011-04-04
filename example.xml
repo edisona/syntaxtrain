@@ -1,0 +1,80 @@
+<AGILS startID="compilationUnit" version="0.1">
+
+	<Rule ID="compilationUnit">
+		<Rule ID="typeDeclaration" />
+	</Rule>
+	
+	<Rule ID="typeDeclaration">
+		<Rule ID="classDeclaration" />
+	</Rule>
+	
+	<Rule ID="classDeclaration">
+		<Rule ID="'class'" />
+		<Rule ID="IDENTIFIER" />
+		<Rule ID="'{'" />
+		<Repeat>
+			<Rule ID="fieldDeclaration" />
+		</Repeat>
+		<Rule ID="'}'" />
+	</Rule>
+	
+	<Rule ID="fieldDeclaration">
+		<Rule ID="methodDeclaration" />
+	</Rule>
+	
+	<Rule ID="methodDeclaration">
+		<Rule ID="type" />
+		<Rule ID="IDENTIFIER" />
+		<Rule ID="'('" />
+		<Rule ID="')'" />
+		<Rule ID="';'" />
+	</Rule>
+	
+	<Rule ID="type">
+		<Rule ID="typeSpecifier" />
+		<Repeat>
+			<Rule ID="'['" />
+			<Rule ID="']'" />
+		</Repeat>
+	</Rule>
+	
+	<Rule ID="typeSpecifier">
+		<Or>
+			<Option>
+				<Rule ID="'boolean'" />
+			</Option>
+			<Option>
+				<Rule ID="'byte'" />
+			</Option>
+			<Option>
+				<Rule ID="'char'" />
+			</Option>
+			<Option>
+				<Rule ID="'short'" />
+			</Option>
+			<Option>
+				<Rule ID="'int'" />
+			</Option>
+			<Option>
+				<Rule ID="'float'" />
+			</Option>
+			<Option>
+				<Rule ID="'long'" />
+			</Option>
+			<Option>
+				<Rule ID="'double'" />
+			</Option>
+			<Option>
+				<Rule ID="packageName" />
+			</Option>
+		</Or>
+	</Rule>
+	
+	<Rule ID="packageName">
+		<Repeat>
+			<Rule ID="IDENTIFIER" />
+			<Rule ID="'.'" />
+		</Repeat>
+		<Rule ID="IDENTIFIER" />
+	</Rule>
+</AGILS>

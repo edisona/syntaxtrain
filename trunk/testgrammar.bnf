@@ -1,0 +1,196 @@
+compilation_unit  = 
+ [ package_statement ] 
+ < import_statement > 
+ < type_declaration >  . 
+
+package_statement  = 
+ "package" package_name  ";"  . 
+
+import_statement  = 
+ "import"  (  ( package_name  "."  "*"  ";"  ) 
+ /  ( class_name )  )  ";"  . 
+
+type_declaration  = 
+ [ doc_comment ]  ( class_declaration  / interface_declaration ) . 
+
+doc_comment  =  "/**"  "... text ..."  "*/"  . 
+
+class_declaration  = 
+ < modifier >  "class" IDENTIFIER 
+ [  "extends" class_name ] 
+ [  "implements" interface_name  <  "," interface_name >  ] 
+ "{"  < field_declaration >  "}"  . 
+
+interface_declaration  = 
+ < modifier >  "interface" IDENTIFIER 
+ [  "extends" interface_name  <  "," interface_name >  ] 
+ "{"  < field_declaration >  "}"  . 
+
+field_declaration  = 
+ (  [ doc_comment ]  ( method_declaration 
+ / constructor_declaration 
+ / variable_declaration )  ) 
+ / static_initializer 
+ /  ";"  . 
+
+method_declaration  = 
+ < modifier > type IDENTIFIER 
+ "("  [ parameter_list ]  ")"  <  "["  "]"  > 
+ ( statement_block  /  ";"  )  . 
+
+constructor_declaration  = 
+ < modifier > IDENTIFIER  "("  [ parameter_list ]  ")" 
+statement_block  . 
+
+statement_block  =  "{"  < statement >  "}"  . 
+
+variable_declaration  = 
+ < modifier > type variable_declarator 
+ <  "," variable_declarator  >  ";"  . 
+
+variable_declarator  = 
+ IDENTIFIER  <  "["  "]"  >  [  "=" variable_initializer ]  . 
+
+variable_initializer  = 
+expression 
+ /  (  "{"  [ variable_initializer 
+ <  "," variable_initializer  >  [  ","  ]  ]  "}"  )  . 
+
+static_initializer  = 
+ "static" statement_block  . 
+
+parameter_list  = 
+parameter  <  "," parameter >  . 
+
+parameter  = 
+type IDENTIFIER  <  "["  "]"  >  . 
+
+statement  = 
+variable_declaration 
+ /  ( expression  ";"  ) 
+ /  ( statement_block ) 
+ /  ( if_statement ) 
+ /  ( do_statement ) 
+ /  ( while_statement ) 
+ /  ( for_statement ) 
+ /  ( try_statement ) 
+ /  ( switch_statement ) 
+ /  (  "synchronized"  "(" expression  ")" statement  ) 
+ /  (  "return"  [ expression ]  ";"  ) 
+ /  (  "throw" expression ";"  ) 
+ /  ( IDENTIFIER  ":" statement ) 
+ /  (  "break"  [ IDENTIFIER ]  ";"  ) 
+ /  (  "continue"  [ IDENTIFIER ]  ";"  ) 
+ /  (  ";"  )  . 
+
+if_statement = 
+ "if"  "(" expression  ")" statement_block 
+ [  "else" statement_block ]  . 
+
+do_statement = 
+ "do" statement_block  "while"  "(" expression  ")"  ";"  . 
+
+while_statement = 
+ "while"  "(" expression  ")" statement  . 
+
+for_statement = 
+ "for"  "("  ( variable_declaration  /  ( expression  ";"  )  /  ";"  ) 
+ [ expression ]  ";" 
+ [ expression ]  ";" 
+ ")" statement  . 
+
+try_statement = 
+ "try" statement_block 
+ <  "catch"  "(" parameter  ")" statement_block > 
+ [  "finally" statement_block ]  . 
+
+switch_statement = 
+ "switch"  "(" expression  ")"  "{" 
+ <  (  "case" expression  ":"  ) 
+ /  (  "default"  ":"  ) 
+ / statement > 
+ "}"  . 
+
+expression  = 
+	[expressionPrefix] 
+		(
+		"null"
+		/ "super"
+		/ "this"
+		/ IDENTIFIER 
+		)
+	[expressionPost].
+expressionPrefix =
+   "-" 
+ / "++" 
+ / "--".
+
+expressionMain =
+   "null"
+ / "super"
+ / "this"
+ / IDENTIFIER 
+ / ( "(" expression ")" ) 
+ / ( "[" expression "]" ) 
+ / ( "." expression ) 
+ / ( "," expression ) 
+ / ( "instanceof" ( class_name ) ) .
+
+expressionPost =
+ "(" [ arglist ] ")".
+
+casting_expression  = 
+ "(" type  ")" expression  . 
+
+creating_expression  = 
+ "new"  (  ( class_name  "("  [ arglist ]  ")"  ) 
+ /  ( type_specifier  [  "[" expression  "]"  ]  <  "["  "]"  >  ) 
+ /  (  "(" expression  ")"  )  )  . 
+
+literal_expression  = 
+integer_literal 
+ / FLOAT 
+ / STRING 
+ / IDENTIFIER  . 
+
+arglist  = 
+expression  <  "," expression  >  . 
+
+type  = 
+type_specifier  <  "["  "]"  >  . 
+
+type_specifier = 
+ "boolean" 
+ /  "byte" 
+ /  "char" 
+ /  "short" 
+ /  "int" 
+ /  "float" 
+ /  "long" 
+ /  "double" 
+ / classOrInterface_name . 
+
+modifier = 
+ "public" 
+ /  "private" 
+ /  "protected" 
+ /  "static" 
+ /  "final" 
+ /  "native" 
+ /  "synchronized" 
+ /  "abstract" 
+ /  "threadsafe" 
+ /  "transient"  . 
+
+package_name = <IDENTIFIER "." > IDENTIFIER  . 
+
+class_name  = <IDENTIFIER "." > IDENTIFIER  . 
+
+interface_name = <IDENTIFIER "." > IDENTIFIER  .
+
+classOrInterface_name = <IDENTIFIER "." > IDENTIFIER  .
+
+integer_literal = 
+ ( INT [ "l" ] )
+ / ( "0x" HEX <HEX> ).
+

@@ -2,7 +2,6 @@ package GUI;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -14,6 +13,7 @@ import java.util.Stack;
 import javax.swing.JPanel;
 
 import KernelAPI.KernelApi;
+import Library.Lock;
 
 import net.hydromatic.clapham.Clapham;
 import net.hydromatic.clapham.graph.Chart;
@@ -32,17 +32,23 @@ public class gGrammarDiagram extends JPanel
 	private HashMap<String, Integer> grammarToId;
 	private String[] grammars;
 	private boolean[] showGrammar;
+	private Lock grammarDiagramsLock;
 	
 	private gGrammarDiagram()
 	{
+		grammarDiagramsLock = new Lock();
 		setBackground(Color.WHITE);
 		updateDiagram();
 	}
 	
-	public void updateDiagram()
+	synchronized public void updateDiagram()
 	{
 		ArrayList<String> grammarNames = KernelApi.getGrammars();
-		
+		if( grammarNames == null )
+		{
+			return;
+		}
+		grammarDiagramsLock.P();
 		//initialize grammar varaibles
 		int grammarId = 0;
         grammars = new String[grammarNames.size()];
@@ -52,10 +58,13 @@ public class gGrammarDiagram extends JPanel
 
 		if( KernelApi.getErrorTrace() != null ) //== null if no error
 		{
+			@SuppressWarnings("unchecked")
 			Stack<Stack<String>> errorTrace = (Stack<Stack<String>>) KernelApi.getErrorTrace().clone();
 			while(!errorTrace.isEmpty())
 			{
 				String ruleName = errorTrace.pop().firstElement();
+				if( grammarToId.containsKey(ruleName) )
+	        		continue;
 				grammars[grammarId] = ruleName;
 				showGrammar[grammarId] = true;
 				grammarToId.put(ruleName, grammarId);
@@ -94,10 +103,9 @@ public class gGrammarDiagram extends JPanel
 			int id = grammarToId.get(grammarName);
 			grammarDiagrams[id] = image;
 		}
-		
-		
-		
-        //show default grammars
+		grammarDiagramsLock.V();
+
+		//show default grammars
 		updateDimensions();
 		repaint();
 	}
@@ -133,7 +141,12 @@ public class gGrammarDiagram extends JPanel
 	public void paint(Graphics g)
 	{
 		super.paint(g);
-
+		
+		if( grammars == null )
+		{
+			return;
+		}
+		grammarDiagramsLock.P();
 		for( int i=0;i<grammars.length;i++ )
 		{
 			if(showGrammar[i])
@@ -143,32 +156,35 @@ public class gGrammarDiagram extends JPanel
 				g.translate(0, image.getHeight());
 			}
 		}
+		grammarDiagramsLock.V();
 	}
 	
 	private BufferedImage drawNode(String symbolName, Grammar grammar)
 	{
 		//temporary image to draw on
-		BufferedImage tempImg = new BufferedImage(3000, 3000, BufferedImage.TYPE_INT_RGB);
+		BufferedImage tempImg = new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB);
 		Graphics2D graphics = tempImg.createGraphics();
 		
-		final Symbol symbol = grammar.symbolMap.get(symbolName);
+		Symbol symbol = grammar.symbolMap.get(symbolName);
 		if (symbol.graph == null)
 		{
 		    throw new RuntimeException(
 		        "Symbol '" + symbolName + "' not found");
 		}
 		
-		final Chart chart = new Chart(grammar, (Graphics2D) graphics);
+		Chart chart = new Chart(grammar, (Graphics2D) graphics);
 		chart.calcDrawing();
 		chart.drawComponent(symbol);
 		
 		//draw the final image
 		Dimension dim = chart.getDimension();
+		
 		BufferedImage finalDrawing = new BufferedImage((int)dim.getWidth(), (int)dim.getHeight() + 5, BufferedImage.TYPE_INT_RGB);
 		graphics = finalDrawing.createGraphics();
-		graphics.setColor(Color.WHITE);
-		graphics.fillRect(0, 0, finalDrawing.getWidth(), finalDrawing.getHeight());
-		graphics.drawImage(tempImg, 0, 5, this);
+		
+		chart = new Chart(grammar, (Graphics2D) graphics);
+		chart.calcDrawing();
+		chart.drawComponent(symbol);
 		return finalDrawing;
 	}
 	

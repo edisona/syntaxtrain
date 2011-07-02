@@ -1,5 +1,7 @@
 package KernelAPI;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -35,11 +37,28 @@ public class KernelApi
 	{
 		return GrammarInterface.getInstance().getErrorLine();
 	}
+	public static int getErrorCharPositionInLine()
+	{
+		return GrammarInterface.getInstance().getErrorCharPositionInLine();
+	}
 	
-	//SETTERS
+	public static void saveSourceCode() throws IOException
+	{
+		GrammarInterface.getInstance().saveSourceCode();
+	}
 	public static void setSourceCode(String code)
 	{
 		GrammarInterface.getInstance().setSourceCode(code);
+		GrammarInterface.getInstance().compile();
+	}
+	public static void readSourceFile( File file )
+	{
+		GrammarInterface.getInstance().readSourceCode( file );
+		GrammarInterface.getInstance().compile();
+	}
+	public static void reloadSourceCode()
+	{
+		GrammarInterface.getInstance().reloadSourceCode();
 		GrammarInterface.getInstance().compile();
 	}
 }

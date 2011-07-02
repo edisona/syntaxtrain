@@ -1,5 +1,7 @@
 package Library;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -9,9 +11,34 @@ import java.io.Reader;
 
 public class StdLibrary
 {
+	public static String xmlEscapeString( String str )
+	{
+		return str.replace("\"", "&quot;").replace("&", "&amp;").replace("'", "&apos;").replace("<", "&lt;").replace(">", "&gt;");
+	}
+	
+	public static String xmlUnEscapeString( String str )
+	{
+		return str.replace("&quot;", "\"").replace("&amp;", "&").replace("&apos;", "'").replace("&lt;", "<").replace("&gt;", ">");
+	}
+	
 	public static String readFileAsString(InputStream inputstream)
 	{
+		if( inputstream == null )
+		{
+			return null;
+		}
         return readFileAsString(new InputStreamReader(inputstream));
+    }
+	public static String readFileAsString(File file)
+	{
+        try
+        {
+			return readFileAsString(new FileInputStream(file));
+		}
+        catch (FileNotFoundException e)
+		{
+			return null;
+		}
     }
 	/**
 	 * Reads a file and returns it's content

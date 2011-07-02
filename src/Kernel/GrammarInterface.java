@@ -1,5 +1,7 @@
 package Kernel;
 
+import GuiAPI.GuiApi;
+
 public class GrammarInterface extends GrammarCompiler
 {
 	private static GrammarInterface instance = null;
@@ -13,6 +15,7 @@ public class GrammarInterface extends GrammarCompiler
 	{
 		compileSourceCode();
 		createBnfComponents();
+		GuiApi.updateDiagrams();
 	}
 	
 	public static synchronized GrammarInterface getInstance()

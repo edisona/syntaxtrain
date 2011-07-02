@@ -1,0 +1,8 @@
+<SyntaxTrain version="1.0">
+	<GUI>
+		<Path grammarFile="javagrammar" />
+	</GUI>
+	<BnfCompiler>
+		<Path jdkBinFolder="C:\Program Files\Java\jdk1.6.0_24\bin" />
+	</BnfCompiler>
+</SyntaxTrain>

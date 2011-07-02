@@ -18,11 +18,13 @@ public abstract class BnfParser extends Parser
 	{
 		super(input, state);
 	}
-	public int errorLine = -1;
+	public int errorLine = -1, errorCharPositionInLine = -1;
+	public boolean popLast = false;
 	public Stack<Stack<String>> trace = new Stack<Stack<String>>();
 	public void displayRecognitionError(String[] tokenNames, RecognitionException e) throws RuntimeException
 	{
     		errorLine = e.line;
+    		errorCharPositionInLine = e.charPositionInLine;
 		throw new RuntimeException();
 	}
 	//the default call to check syntax

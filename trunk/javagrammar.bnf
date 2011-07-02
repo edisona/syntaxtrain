@@ -11,9 +11,7 @@ import_statement  =
  /  ( class_name )  )  ";"  . 
 
 type_declaration  = 
- [ doc_comment ]  ( class_declaration  / interface_declaration ) . 
-
-doc_comment  =  "/**"  "... text ..."  "*/"  . 
+ class_declaration  / interface_declaration . 
 
 class_declaration  = 
  < modifier >  "class" IDENTIFIER 
@@ -27,9 +25,9 @@ interface_declaration  =
  "{"  < field_declaration >  "}"  . 
 
 field_declaration  = 
- (  [ doc_comment ]  ( method_declaration 
+ (  method_declaration 
  / constructor_declaration 
- / variable_declaration )  ) 
+ / variable_declaration ) 
  / static_initializer 
  /  ";"  . 
 
@@ -78,14 +76,13 @@ variable_declaration
  /  (  "synchronized"  "(" expression  ")" statement  ) 
  /  (  "return"  [ expression ]  ";"  ) 
  /  (  "throw" expression ";"  ) 
- /  ( IDENTIFIER  ":" statement ) 
  /  (  "break"  [ IDENTIFIER ]  ";"  ) 
  /  (  "continue"  [ IDENTIFIER ]  ";"  ) 
  /  (  ";"  )  . 
 
 if_statement = 
  "if"  "(" expression  ")" statement_block 
- [  "else" statement_block ]  . 
+ [  "else" statement ]  . 
 
 do_statement = 
  "do" statement_block  "while"  "(" expression  ")"  ";"  . 
@@ -96,7 +93,7 @@ while_statement =
 for_statement = 
  "for"  "("  ( variable_declaration  /  ( expression  ";"  )  /  ";"  ) 
  [ expression ]  ";" 
- [ expression ]  ";" 
+ [ expression ] 
  ")" statement  . 
 
 try_statement = 
@@ -113,45 +110,72 @@ switch_statement =
 
 expression  = 
 	[expressionPrefix] 
-		(
-		"null"
-		/ "super"
-		/ "this"
-		/ IDENTIFIER 
-		)
+		expressionMain
+		< "." expressionMain >
 	[expressionPost].
+
+expressionMain =
+	  "null"
+	/ "this"
+	/ ( "super" [ "(" [ arglist ] ")" ] )
+	/ ( IDENTIFIER [ "(" [ arglist ] ")" ] < "[" expression "]" > )
+	/ ( "(" expression ")" ) 
+	/ "true"
+	/ "false"
+	/ integer_literal 
+	/ FLOAT 
+	/ STRING 
+	/ (
+		"new" (
+			  ( class_name "(" [arglist] ")" )
+			/ ( type_specifier "[" [ expression ] "]" < "[" "]" > )
+			/ ( "(" expression ")" )
+		)
+	  ).
+
 expressionPrefix =
    "-" 
  / "++" 
- / "--".
-
-expressionMain =
-   "null"
- / "super"
- / "this"
- / IDENTIFIER 
- / ( "(" expression ")" ) 
- / ( "[" expression "]" ) 
- / ( "." expression ) 
- / ( "," expression ) 
- / ( "instanceof" ( class_name ) ) .
+ / "--"
+ / "!"
+ / "~".
 
 expressionPost =
- "(" [ arglist ] ")".
-
-casting_expression  = 
- "(" type  ")" expression  . 
-
-creating_expression  = 
- "new"  (  ( class_name  "("  [ arglist ]  ")"  ) 
- /  ( type_specifier  [  "[" expression  "]"  ]  <  "["  "]"  >  ) 
- /  (  "(" expression  ")"  )  )  . 
-
-literal_expression  = 
-integer_literal 
- / FLOAT 
- / STRING 
- / IDENTIFIER  . 
+   "++"
+ / "--"
+ / ( (
+	  "="
+	/ "+" 
+    / "+=" 
+    / "-" 
+    / "-=" 
+    / "*" 
+    / "*=" 
+    / "/" 
+    / "/=" 
+    / "%" 
+    / "%="
+	/  ">" 
+    / "<" 
+    / ">=" 
+    / "<=" 
+    / "==" 
+    / "!="
+	/ "&" 
+    / "&=" 
+    / "|" 
+    / "|=" 
+    / "^" 
+    / "^=" 
+    / "&&" 
+    / "||=" 
+	/ ("?" expression ":")
+	/ ">>="
+	/ "<<"
+	/ ">>"
+	/ ">>>"
+   ) expression )
+   .
 
 arglist  = 
 expression  <  "," expression  >  . 

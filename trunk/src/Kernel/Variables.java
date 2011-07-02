@@ -1,11 +1,14 @@
 package Kernel;
 
+import java.awt.Color;
 import java.util.Hashtable;
 
 public class Variables
 {
-	public static final String xmlVersion = "0.1";
+	public static final String xmlVersion = "1.0";
 	
-	public static String grammarName = "testgrammar";
+	public static String grammarName = "invalid";
 	public static Hashtable<String, String> idToVariable;
+	
+	public static final Color highlightColor = new Color(255,150,50);
 }

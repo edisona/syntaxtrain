@@ -28,7 +28,7 @@ import Library.StdLibrary;
 public class CommandLineTool
 {
 	private static String jdkBinFolder = "";
-	private static final String optionsXmlFile = "bnfCompilerOptions.xml";
+	private static final String optionsXmlFile = "options.xml";
 	
 	public static void printUsage()
 	{
@@ -44,7 +44,7 @@ public class CommandLineTool
 			printUsage();
 			System.exit(0);
 		}
-		loadOptions();
+		readOptions();
 		String filename = args[0];
 		String filenamePre = filename.substring(0, filename.length() - 4);
 		integrityCheck(filename);
@@ -106,7 +106,7 @@ public class CommandLineTool
 		System.exit(1);
 	}
 	
-	private static void loadOptions()
+	private static void readOptions()
 	{
 		String optionsXml = StdLibrary.readFileAsString(optionsXmlFile);
 		if( optionsXml == null )
@@ -117,8 +117,8 @@ public class CommandLineTool
 		
 		try
 		{
-			XmlNode compilerOptions = new XmlNode(optionsXml, "0.1");
-			jdkBinFolder = compilerOptions.getChildNode("path").getAttribute("jdkBinFolder") + "\\";
+			XmlNode compilerOptions = new XmlNode(optionsXml, "1.0");
+			jdkBinFolder = compilerOptions.getChildNode("BnfCompiler").getChildNode("path").getAttribute("jdkBinFolder") + "\\";
 			return;
 		}
 		catch (XMLLoadException e)
@@ -330,7 +330,7 @@ public class CommandLineTool
 		if( id != null )
 		{
 			writeTabs(tabs, out);
-			out.write("\t<Rule ID=\"" + id + "\" UUID=\"" + UUID + "\" />\n");
+			out.write("\t<Rule ID=\"" + StdLibrary.xmlEscapeString( id ) + "\" UUID=\"" + UUID + "\" />\n");
 		}
 		else
 		{
@@ -431,16 +431,45 @@ public class CommandLineTool
 					"package Grammar;\n" +
 					"}\n" +
 					"\n" +
-					"@members\n" +
+					"@parser::members\n" +
 					"{\n" +
 					"	public void bnf() throws RecognitionException\n" +
 					"	{\n" +
 					"		" + startRule + "();\n" +
 					"	}\n" +
 					"}\n" +
+					"@lexer::members {\n" +
+					"    public Token nextToken() {\n" +
+					"	while (true) {\n" +
+					"		state.token = null;\n" +
+					"		state.channel = Token.DEFAULT_CHANNEL;\n" +
+					"		state.tokenStartCharIndex = input.index();\n" +
+					"		state.tokenStartCharPositionInLine = input.getCharPositionInLine();\n" +
+					"		state.tokenStartLine = input.getLine();\n" +
+					"		state.text = null;\n" +
+					"		if ( input.LA(1)==CharStream.EOF ) {\n" +
+					"			return Token.EOF_TOKEN;\n" +
+					"		}\n" +
+					"		try {\n" +
+					"			mTokens();\n" +
+					"			if ( state.token==null ) {\n" +
+					"				emit();\n" +
+					"			}\n" +
+					"			else if ( state.token==Token.SKIP_TOKEN ) {\n" +
+					"				continue;\n" +
+					"			}\n" +
+					"			return state.token;\n" +
+					"		}\n" +
+					"		catch (RecognitionException re) {\n" +
+					"				emit();\n" +
+					"			return state.token;\n" +
+					"		}\n" +
+					"	}\n" +
+					"}\n" +
+					"}\n" +
 					"\n"
 					);
-			writeBnfRule( startRule, ruleNameToLink.get(startRule), out );
+			writeBnfRule( startRule, ruleNameToLink.get(startRule), out, true );
 			for( String ruleName : ruleNameToLink.keySet() )
 			{
 				if(ruleName.equalsIgnoreCase(startRule))
@@ -448,7 +477,7 @@ public class CommandLineTool
 					//rule is already written
 					continue;
 				}
-				writeBnfRule( ruleName, ruleNameToLink.get(ruleName), out);
+				writeBnfRule( ruleName, ruleNameToLink.get(ruleName), out, false );
 			}
 			out.write(
 					"INT :	'0'..'9'+\n" +
@@ -460,11 +489,13 @@ public class CommandLineTool
 					"    |   ('0'..'9')+ EXPONENT\n" +
 					"    ;\n" +
 					"\n" +
+					"IDENTIFIER  :	('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_')* ;\n" +
+					"\n" +
 					"HEX\n" +
-					"	:	'0'..'9' | 'a'..'f';\n" +
+					"	:	HEX_DIGIT+;\n" +
 					"\n" +
 					"STRING\n" +
-				    ":  '\"' ( ESC_SEQ | ~('\\\\'|'\"') )* '\"'\n" +
+				    ":  '\"' ( ESC_SEQ | ~('\\\\'|'\"'|'\\n') )* '\"'\n" +
 				    ";\n" +
 					"\n" +
 					"fragment\n" +
@@ -496,8 +527,6 @@ public class CommandLineTool
 					"    :   '//' ~('\\n'|'\\r')* '\\r'? '\\n' {$channel=HIDDEN;}\n" +
 					"    |   '/*' ( options {greedy=false;} : . )* '*/' {$channel=HIDDEN;}\n" +
 					"    ;\n" +
-					"\n" +
-					"IDENTIFIER  :	('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_')* ;\n" +
 					"\n" +
 					"WS  :   ( ' '\n" +
 					"        | '\\t'\n" +
@@ -545,13 +574,17 @@ public class CommandLineTool
 		}
 		return false;
 	}
-	private static void writeBnfRule(String ruleName, Link rule, BufferedWriter out) throws IOException
+	private static void writeBnfRule(String ruleName, Link rule, BufferedWriter out, boolean isStartRule) throws IOException
 	{
 		out.write( ruleName + " :\n" );
-		out.write( "\t\t{Stack<String> stack = new Stack<String>(); trace.push(stack); stack.push(\"" + ruleName + "\");}\n" );
+		out.write( "\t\t{Stack<String> stack = new Stack<String>(); trace.push(stack); stack.push(\"" + ruleName + "\"); popLast = false;}\n" );
 		for( Link subRule : rule.getIds() )
 		{
 			writeBnfSubRule( subRule, out );
+		}
+		if( isStartRule )
+		{
+			out.write("EOF");
 		}
 		out.write("\n\t\t{trace.pop();};\n\n");
 	}
@@ -564,8 +597,9 @@ public class CommandLineTool
 		
 		if( id != null )
 		{
-			out.write( " (" + id + " " );
-			out.write( "{stack.push(\"" + UUID + "\");}) ");
+			out.write( "({stack.push(\"" + UUID + "\"); popLast = true;}");
+			out.write( " " + id + " {popLast = false;}) " );
+			
 		}
 		else
 		{

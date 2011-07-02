@@ -6,6 +6,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Stack;
 
 import javax.swing.BorderFactory;
@@ -26,6 +27,7 @@ public class gGrammarOptions extends JList implements ListCellRenderer, ListSele
 	private static gGrammarOptions instance = null;
 	
 	private HashMap<String, Boolean> isChecked;
+	private HashSet<String> errorTraceComponents;
     //used by getListCellRendererComponent to avoid allocating a new checkbox all the time
     private JCheckBox checkBox;
     private JLabel label;
@@ -36,7 +38,6 @@ public class gGrammarOptions extends JList implements ListCellRenderer, ListSele
 	public gGrammarOptions()
 	{
 		clearCheckedRules();
-        //this.setName("test");
         setCellRenderer( this );
         addListSelectionListener( this );
 
@@ -54,13 +55,14 @@ public class gGrammarOptions extends JList implements ListCellRenderer, ListSele
 	public Dimension getPreferredSize()
 	{
 		Dimension dim = super.getPreferredSize();
-		dim.setSize(dim.getWidth()+70, dim.getHeight());
+		dim.setSize(dim.getWidth()+20, dim.getHeight());
 		return dim;
 	}
 	
 	private void clearCheckedRules()
 	{
 		isChecked = new HashMap<String, Boolean>();
+		errorTraceComponents = new HashSet<String>();
 		ArrayList<String> grammarNames = KernelApi.getGrammars();
         if( grammarNames != null )
         {
@@ -82,12 +84,18 @@ public class gGrammarOptions extends JList implements ListCellRenderer, ListSele
 	public void updateGrammars()
 	{
 		clearCheckedRules();
+		showErrorTrace();
+	}
+	
+	private void showErrorTrace()
+	{
 		if( KernelApi.getErrorTrace() != null )
 		{
 			for(Stack<String> ruleTrace : KernelApi.getErrorTrace())
 			{
-				isChecked.put(ruleTrace.firstElement(), true);
-				numChecked++;
+				String component = ruleTrace.firstElement();
+				isChecked.put(component, true);
+				errorTraceComponents.add(component);
 			}
 		}
 	}
@@ -150,20 +158,26 @@ public class gGrammarOptions extends JList implements ListCellRenderer, ListSele
             	String name = ( String ) value;
             	if( name.equalsIgnoreCase("Syntax Components:") )
             	{
-            		//top
+            		// header clicked
             		if( numChecked > 0 )
             		{
             			numChecked = 0;
             			for ( int i=1;i<listData.length;i++ )
             	        {
             				String grammarName = listData[i];
-            	            isChecked.put( grammarName, false );
-            	            gGrammarDiagram.getInstance().setGrammarVisible(grammarName, false);
+            				boolean showGrammar = false;
+            				//make sure to still show the error trace
+            				if( errorTraceComponents.contains(grammarName) )
+            				{
+            					showGrammar = true;
+            				}
+            				isChecked.put( grammarName, showGrammar );
+							gGrammarDiagram.getInstance().setGrammarVisible(grammarName, showGrammar);
             	        }
             		}
             		else
             		{
-            			numChecked = listData.length - 1;
+            			numChecked = listData.length - 1 - errorTraceComponents.size();
             			for ( int i=1;i<listData.length;i++ )
             	        {
             				String grammarName = listData[i];
@@ -175,7 +189,16 @@ public class gGrammarOptions extends JList implements ListCellRenderer, ListSele
             	else
             	{
 	            	boolean isSelected = isChecked.get( name );
-	            	numChecked += isSelected ? -1 : 1;
+	            	if( errorTraceComponents.contains( name ) )
+	            	{
+	            		// selection is part of the trace, so if it's turned off, then we move one step away from default (0), otherwise we move one closer.
+	            		numChecked += isSelected ? 1 : -1;
+	            	}
+	            	else
+	            	{
+	            		//selection is not part of the error trace, if it's turned off then move one step closer to default (0), otherwise move one step away.
+	            		numChecked += isSelected ? -1 : 1;
+	            	}
 	                isChecked.put( name, !isSelected );
 	                gGrammarDiagram.getInstance().setGrammarVisible(name, !isSelected);
             	}

@@ -1,15 +1,11 @@
 package Kernel;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.Stack;
 
 import org.antlr.runtime.ANTLRInputStream;
@@ -35,7 +31,8 @@ public class SourceCodeCompiler extends GrammarBase
 	 * This means the last '}' is missing (if fieldDeclaration weren't there, the error would be in that.
 	 */
 	protected Stack<Stack<String>> errorTrace;
-	protected int errorLine;
+	protected int errorLine, errorCharPositionInLine;
+	protected boolean popLast;
 	private Constructor<Lexer> LexerConstructor;
 	private Constructor<BnfParser> ParserConstructor;
 	
@@ -45,14 +42,18 @@ public class SourceCodeCompiler extends GrammarBase
 		boolean success = false;
 		errorTrace = null;
 		errorLine = -1;
+		errorCharPositionInLine = -1;
+		popLast = false;
 		
 		/*
 		 * Load classes
 		 */
 		try
 		{
-			Class CLexer = Class.forName("Grammar." + Variables.grammarName + "Lexer", false, classLoader);
-			Class CParser = Class.forName("Grammar." + Variables.grammarName + "Parser", false, classLoader);
+			@SuppressWarnings("unchecked")
+			Class<Lexer> CLexer = (Class<Lexer>) Class.forName("Grammar." + Variables.grammarName + "Lexer", false, classLoader);
+			@SuppressWarnings("unchecked")
+			Class<BnfParser> CParser = (Class<BnfParser>) Class.forName("Grammar." + Variables.grammarName + "Parser", false, classLoader);
 			
 			LexerConstructor = CLexer.getConstructor(new Class[]{CharStream.class});
 			ParserConstructor = CParser.getConstructor(new Class[]{TokenStream.class});
@@ -65,6 +66,7 @@ public class SourceCodeCompiler extends GrammarBase
 			
 			CommonTokenStream tokens = new CommonTokenStream(lexer);
 			
+			@SuppressWarnings("unused")
 			BnfParser parser = ParserConstructor.newInstance(new Object[]{tokens});
 			
 			success = true;
@@ -122,6 +124,11 @@ public class SourceCodeCompiler extends GrammarBase
 		return errorLine;
 	}
 	
+	public int getErrorCharPositionInLine()
+	{
+		return errorCharPositionInLine;
+	}
+	
 	protected void compileSourceCode()
 	{
 		try
@@ -140,21 +147,16 @@ public class SourceCodeCompiler extends GrammarBase
 			try
 			{
 				parser.bnf();
-				System.out.println("No errors :)");
+				//System.out.println("No errors :)");
 			}
 			catch(RuntimeException e)
 			{
-				System.out.println("Failed, errors in code :(");
+				//System.out.println("Failed, errors in code :(");
 			}
 			errorTrace = parser.trace;
 			errorLine = parser.errorLine;
-			
-			System.out.println("Error trace:");
-			for( Stack<String> stck : errorTrace )
-			{
-				for(String str : stck)
-					System.out.println("	trace: " + str);
-			}
+			errorCharPositionInLine = parser.errorCharPositionInLine;
+			popLast = parser.popLast;
 			
 			return;
 		}

@@ -11,4 +11,6 @@ public class Variables
 	public static Hashtable<String, String> idToVariable;
 	
 	public static final Color highlightColor = new Color(255,150,50);
+	
+	public static String jarPath = "";
 }

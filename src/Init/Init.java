@@ -2,6 +2,7 @@ package Init;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.io.File;
 
 import javax.swing.JOptionPane;
 
@@ -16,6 +17,7 @@ import GUI.MainScreen;
 import GUI.Variables;
 import GuiAPI.GuiApi;
 import Kernel.GrammarInterface;
+import KernelAPI.KernelApi;
 import Library.StdLibrary;
 
 public class Init
@@ -24,6 +26,8 @@ public class Init
 	
 	public static void main(String[] args)
 	{
+		Kernel.Variables.jarPath = (new File(Init.class.getProtectionDomain().getCodeSource().getLocation().getPath())).getParentFile().getAbsolutePath().replaceAll("%20", " ") + "\\";
+		
 		Chart.titleColor = Color.BLACK;
 		Chart.titleFont = new Font("Serif", Font.PLAIN, 18);
 		
@@ -41,14 +45,26 @@ public class Init
 		
 		Variables.setCodeChanged(false);
 		Variables.setDiagramsOutOfSynch(false);
+		
+		if( args.length > 0 )
+		{
+			File file = new File(args[0]);
+			if( !file.exists() )
+			{
+				GuiApi.showMessage("Source file " + args[0] + " was not found.");
+				System.exit(0);
+			}
+			KernelApi.readSourceFile(file);
+			Variables.lastOpenedDirectory = file.getParent();
+		}
 	}
 	
 	private static void readOptions()
 	{
-		String optionsXml = StdLibrary.readFileAsString(optionsXmlFile);
+		String optionsXml = StdLibrary.readFileAsString( Kernel.Variables.jarPath + optionsXmlFile );
 		if( optionsXml == null )
 		{
-			JOptionPane.showMessageDialog( null, "There was a problem reading file " + optionsXmlFile + ".");
+			JOptionPane.showMessageDialog( null, "There was a problem reading file " + Kernel.Variables.jarPath + optionsXmlFile + ".");
 			System.exit(0);
 		}
 		

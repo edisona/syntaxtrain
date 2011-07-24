@@ -22,7 +22,7 @@ public class GrammarBase
 	protected GrammarBase()
 	{
 		boolean success = false;
-		String jarFileName = Variables.grammarName + ".jar";
+		String jarFileName = Kernel.Variables.jarPath + Variables.grammarName + ".jar";
 		sourceCode = "";
 		/*
 		 * Load jar file
